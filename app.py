@@ -4,7 +4,7 @@ import qrcode
 from PIL import Image
 import io
 
-# --- CONFIGURAÇÃO DA PÁGINA (ESTILO DARK) ---
+# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(layout="wide", page_title="OPS - Painel Tático")
 
 st.markdown("""
@@ -15,7 +15,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- CLASSE PARA GERAR O PDF IGUAL AO MODELO ---
 class BriefingPDF(FPDF):
     def header_op(self, op_name, mission_id, meeting_pt, briefing_dt, h_hora):
         self.set_fill_color(0, 0, 0)
@@ -23,21 +22,15 @@ class BriefingPDF(FPDF):
         self.set_text_color(255, 255, 255)
         self.set_font("Arial", 'B', 8)
         self.cell(190, 8, "S I G I L O S O   -   D O C U M E N T O   D E   I N T E L I G Ê N C I A   -   R E S T R I T O", 0, 1, 'C')
-        
         self.set_text_color(0, 0, 0)
         self.set_font("Arial", 'B', 18)
         self.ln(2)
         self.cell(140, 10, op_name.upper(), 0, 0)
-        
-        # ID Missão e Comando
         self.set_font("Arial", 'B', 8)
         self.set_xy(160, 20)
         self.cell(40, 10, "DEL POL SMA", 1, 1, 'C')
-
-        # Faixa de dados da missão
         self.set_xy(10, 35)
         self.set_font("Arial", 'B', 6)
-        # Grid layout (simplificado)
         self.cell(50, 10, f"PONTO: {meeting_pt}", 1)
         self.cell(50, 10, f"DATA: {briefing_dt}", 1)
         self.cell(50, 10, f"H-HORA: {h_hora}", 1)
@@ -54,10 +47,8 @@ class BriefingPDF(FPDF):
         self.set_xy(165, 52)
         self.cell(30, 8, tipo_mandado.upper(), 0, 1, 'R')
 
-# --- INTERFACE DO USUÁRIO ---
 st.title("📂 Painel de Alvos Táticos")
 
-# 1. Cadastro da Operação
 with st.expander("⚙️ Configurações da Operação", expanded=True):
     col1, col2, col3 = st.columns(3)
     op_name = col1.text_input("Nome da Operação", "OPERAÇÃO CERBERUS")
@@ -66,7 +57,6 @@ with st.expander("⚙️ Configurações da Operação", expanded=True):
     h_hora = col1.text_input("H-Hora", "06:00")
     briefing_dt = col2.text_input("Data", "27/01/2026")
 
-# 2. Cadastro do Alvo e seus múltiplos endereços
 st.divider()
 st.subheader("👤 Qualificação do Alvo")
 col_a, col_b, col_c = st.columns([2, 1, 1])
@@ -75,7 +65,6 @@ vulgo = col_b.text_input("Vulgo/Apelido")
 tipo_mandado = col_c.selectbox("Mandado", ["Prisão Preventiva", "Busca e Apreensão", "Temporária"])
 foto_alvo = st.file_uploader("Foto do Alvo", type=['jpg', 'png'])
 
-# Lógica de Múltiplos Endereços
 if 'enderecos' not in st.session_state:
     st.session_state.enderecos = []
 
@@ -94,28 +83,18 @@ for i, ender in enumerate(st.session_state.enderecos):
     ender['foto'] = st.file_uploader(f"Foto da Fachada #{i+1}", type=['jpg', 'png'], key=f"f_{i}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# 3. Geração do PDF
 if st.button("🚀 GERAR DOSSIÊ COMPLETO"):
     pdf = BriefingPDF()
-    
-    for ender in st.session_state.enderecos:
+    for i, ender in enumerate(st.session_state.enderecos):
         pdf.add_page()
         pdf.header_op(op_name, mission_id, meeting_pt, briefing_dt, h_hora)
         pdf.draw_target_info(alvo_nome, vulgo, tipo_mandado)
-        
-        # Fotos
         if foto_alvo:
-            # Salvar imagem temporária para o PDF
-            img = Image.open(foto_alvo)
-            img.save(f"temp_alvo.png")
+            with open("temp_alvo.png", "wb") as f: f.write(foto_alvo.getbuffer())
             pdf.image("temp_alvo.png", 10, 65, 90, 65)
-            
         if ender['foto']:
-            img_f = Image.open(ender['foto'])
-            img_f.save(f"temp_casa_{i}.png")
+            with open(f"temp_casa_{i}.png", "wb") as f: f.write(ender['foto'].getbuffer())
             pdf.image(f"temp_casa_{i}.png", 105, 65, 95, 65)
-
-        # Dados do Local
         pdf.set_xy(10, 135)
         pdf.set_font("Arial", 'B', 8)
         pdf.set_text_color(26, 58, 108)
@@ -123,16 +102,9 @@ if st.button("🚀 GERAR DOSSIÊ COMPLETO"):
         pdf.set_text_color(0, 0, 0)
         pdf.set_font("Arial", '', 10)
         pdf.multi_cell(180, 5, ender['rua'].upper())
-        
-        # QR Code Dinâmico
         qr_url = f"https://www.google.com/maps/search/{ender['rua'].replace(' ', '+')}"
         qr = qrcode.make(qr_url)
         qr.save("temp_qr.png")
         pdf.image("temp_qr.png", 10, 200, 30, 30)
-        pdf.set_xy(45, 210)
-        pdf.set_font("Arial", 'B', 8)
-        pdf.cell(100, 5, "ESCANEIE PARA ROTA NO GOOGLE MAPS", 0, 1)
-
-    # Output
-    pdf_output = pdf.output(dest='S').encode('latin-1')
-    st.download_button("⬇️ Baixar PDF Operacional", data=pdf_output, file_name="briefing.pdf")
+    pdf_output = pdf.output(dest='S')
+    st.download_button("⬇️ Baixar PDF Operacional", data=bytes(pdf_output), file_name="briefing.pdf")
