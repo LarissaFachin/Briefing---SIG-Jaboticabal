@@ -5,42 +5,48 @@ from PIL import Image
 import io
 from datetime import datetime
 
-# --- CONFIGURAÇÃO VISUAL (ESTILO DASHBOARD DARK OPS) ---
+# --- CONFIGURAÇÃO VISUAL (ESTILO DASHBOARD INTELIGÊNCIA) ---
 st.set_page_config(layout="wide", page_title="SISTEMA OPS - TÁTICO")
 
 st.markdown("""
     <style>
     .stApp { background-color: #050a14; color: #ffffff; }
-    [data-testid="stSidebar"] { background-color: #0b1424; border-right: 2px solid #1e3a8a; }
     
-    /* Títulos e Labels */
-    h1, h2, h3 { font-family: 'Inter', sans-serif; color: white !important; font-style: italic; }
-    label { color: #3b82f6 !important; font-weight: bold !important; font-size: 14px !important; }
+    /* Cabeçalho da Operação */
+    .op-header { background-color: #0b111b; border: 2px solid #1e3a8a; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     
-    /* Cards do Painel Principal */
-    .op-header { background-color: #0b111b; border: 1px solid #1e293b; padding: 25px; border-radius: 20px; margin-bottom: 25px; }
-    .alvo-card { background-color: #0f172a; border-left: 5px solid #2563eb; padding: 20px; border-radius: 15px; margin-bottom: 15px; }
+    /* Ficha do Alvo (Estilo Militar) */
+    .alvo-card { 
+        background-color: #0f172a; 
+        border-left: 8px solid #2563eb; 
+        padding: 25px; 
+        border-radius: 12px; 
+        margin-bottom: 20px;
+        border-top: 1px solid #1e3a8a;
+        border-right: 1px solid #1e3a8a;
+        border-bottom: 1px solid #1e3a8a;
+    }
+    
+    label { color: #60a5fa !important; font-weight: bold !important; text-transform: uppercase; font-size: 12px !important; }
     
     /* Botões */
-    .stButton>button { background-color: #2563eb !important; color: white !important; font-weight: bold !important; border-radius: 8px !important; border: none !important; transition: 0.3s; }
-    .stButton>button:hover { background-color: #1d4ed8 !important; transform: scale(1.02); }
+    .stButton>button { background-color: #2563eb !important; color: white !important; font-weight: bold !important; border-radius: 6px !important; border: none !important; height: 45px; }
     
-    /* Badges */
-    .badge-hora { background-color: #2e1a05; color: #f59e0b; padding: 4px 12px; border-radius: 20px; font-weight: bold; border: 1px solid #f59e0b; }
+    .badge-vtr { background-color: #1e3a8a; color: #60a5fa; padding: 3px 10px; border-radius: 4px; border: 1px solid #3b82f6; font-size: 12px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- INICIALIZAÇÃO DE ESTADOS (BANCO DE DADOS TEMPORÁRIO) ---
+# --- BANCO DE DADOS EM MEMÓRIA ---
 if 'alvos' not in st.session_state: st.session_state.alvos = []
 if 'missao' not in st.session_state: 
     st.session_state.missao = {
-        'nome': 'Operação', 'unidade': 'Delegacia do Município', 
+        'nome': 'Operação', 'unidade': 'DELEGACIA DO MUNICÍPIO', 
         'ponto': 'Rua Antonio Freitas', 'data_br': '04/03/2026 05:30', 
         'h_hora': '04/03/2026 06:00', 'resumo': ''
     }
 if 'view' not in st.session_state: st.session_state.view = 'painel'
 
-# --- CLASSE DO PDF (ESTRUTURA ORIGINAL SOLICITADA) ---
+# --- CLASSE DO PDF (LAYOUT FIEL AO MODELO) ---
 class BriefingPDF(FPDF):
     def header_op(self, missao):
         self.set_fill_color(0, 0, 0)
@@ -52,7 +58,7 @@ class BriefingPDF(FPDF):
         self.ln(2)
         self.set_font("Arial", 'B', 22)
         self.cell(140, 10, missao['nome'].upper(), 0, 0)
-        self.set_xy(160, 20); self.cell(40, 12, missao['unidade'].upper(), 1, 1, 'C')
+        self.set_xy(160, 20); self.set_font("Arial", 'B', 10); self.cell(40, 12, missao['unidade'].upper(), 1, 1, 'C')
         self.set_xy(10, 42); self.set_font("Arial", 'B', 6)
         self.cell(60, 12, f"PONTO DE ENCONTRO: {missao['ponto'].upper()}", 1)
         self.cell(50, 12, f"BRIEFING: {missao['data_br']}", 1)
@@ -60,117 +66,118 @@ class BriefingPDF(FPDF):
         self.cell(40, 12, f"ID MISSÃO: #{id(missao)%100000}", 1)
 
     def draw_footer_fiel(self):
-        self.set_xy(10, 205); self.set_font("Arial", 'B', 8)
+        self.set_xy(10, 210); self.set_font("Arial", 'B', 8)
         self.cell(190, 8, "RELATÓRIO DE OCORRÊNCIA E APREENSÕES DE CAMPO", 'T', 1, 'C')
-        for _ in range(4): self.cell(190, 6, "_"*110, 0, 1)
-        self.ln(5); self.set_font("Arial", 'B', 7)
-        self.cell(60, 5, "CHECKLIST DE DISPOSITIVOS (IMEI/SN)", 0, 1)
-        for _ in range(3): self.cell(100, 5, "_"*60, 0, 1)
+        for _ in range(3): self.cell(190, 6, "_"*110, 0, 1)
 
-# --- NAVEGAÇÃO ---
-def ir_para(view): st.session_state.view = view
-
-# --- TELA 1: PAINEL PRINCIPAL (DASHBOARD) ---
+# --- TELA 1: PAINEL PRINCIPAL ---
 if st.session_state.view == 'painel':
     st.markdown('<div class="op-header">', unsafe_allow_html=True)
-    c1, c2 = st.columns([4, 1])
-    with c1:
-        st.markdown(f"<h1>{st.session_state.missao['nome'].upper()} <span style='cursor:pointer;' onclick='ir_para(\"edit_missao\")'>✏️</span></h1>", unsafe_allow_html=True)
-        st.markdown(f"📍 {st.session_state.missao['ponto']} | <span class='badge-hora'>H-HORA: {st.session_state.missao['h_hora']}</span>", unsafe_allow_html=True)
-    with c2:
-        if st.button("➕ NOVO ALVO"): ir_para('novo_alvo')
+    col_t1, col_t2 = st.columns([4, 1])
+    with col_t1:
+        st.markdown(f"<h1>{st.session_state.missao['nome'].upper()} <span style='font-size:20px; color:#3b82f6;' onclick='ir_para(\"edit_missao\")'>✏️</span></h1>", unsafe_allow_html=True)
+        st.markdown(f"📍 {st.session_state.missao['ponto']} | 🕒 {st.session_state.missao['h_hora']}", unsafe_allow_html=True)
+    with col_t2:
+        if st.button("➕ NOVO ALVO"): st.session_state.view = 'novo_alvo'; st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    if st.button("✏️ EDITAR DADOS DA OPERAÇÃO"): ir_para('edit_missao')
+    if st.button("✏️ EDITAR DADOS GERAIS DA MISSÃO"): st.session_state.view = 'edit_missao'; st.rerun()
 
     st.divider()
     
-    # LISTA DE ALVOS CADASTRADOS
-    if not st.session_state.alvos:
-        st.info("Nenhum alvo cadastrado no painel operacional.")
-    else:
-        for idx, alvo in enumerate(st.session_state.alvos):
-            with st.container():
-                st.markdown(f"""<div class='alvo-card'>
-                <h2 style='margin:0;'>{alvo['nome'].upper()}</h2>
-                <p><b>Mandado:</b> {alvo['tipo']} | <b>VTR:</b> {alvo['viatura']}</p>
-                <p style='color:#94a3b8;'>Integrantes: {', '.join(alvo['equipe'])}</p>
-                </div>""", unsafe_allow_html=True)
+    # LISTA DE FICHAS TÁTICAS
+    for idx, alvo in enumerate(st.session_state.alvos):
+        with st.container():
+            st.markdown(f"""
+            <div class='alvo-card'>
+                <div style='display:flex; justify-content:space-between;'>
+                    <h2 style='margin:0;'>{alvo['nome'].upper()}</h2>
+                    <span class='badge-vtr'>VTR: {alvo['viatura'].upper()}</span>
+                </div>
+                <hr style='border: 0.5px solid #1e3a8a; margin: 10px 0;'>
+                <p><b>ALCUNHA:</b> {alvo['vulgo'].upper()} | <b>TIPO:</b> {alvo['tipo'].upper()}</p>
+                <p style='color:#94a3b8; font-size:13px;'><b>EQUIPE:</b> {', '.join(alvo['equipe'])}</p>
+                <p style='color:#60a5fa;'>📍 {len(alvo['enderecos'])} endereço(s) vinculado(s)</p>
+            </div>
+            """, unsafe_allow_html=True)
 
     if st.session_state.alvos:
         st.divider()
         if st.button("🚀 GERAR PDF DE TODOS OS ALVOS"):
             pdf = BriefingPDF()
             for alvo in st.session_state.alvos:
-                for ed in alvo['enderecos']:
+                for idx_e, ed in enumerate(alvo['enderecos']):
                     pdf.add_page()
                     pdf.header_op(st.session_state.missao)
-                    # Conteúdo do Alvo... (simplificado para o exemplo)
-                    pdf.set_xy(10, 60); pdf.set_font("Arial", 'B', 14)
-                    pdf.cell(190, 10, f"ALVO: {alvo['nome']} | VTR: {alvo['viatura']}", 1, 1)
+                    # Banner do Alvo
+                    pdf.set_fill_color(26, 58, 108); pdf.rect(10, 58, 190, 15, 'F')
+                    pdf.set_text_color(255, 255, 255); pdf.set_xy(12, 60); pdf.set_font("Arial", 'B', 14)
+                    pdf.cell(100, 10, f"ALVO: {alvo['nome'].upper()} | VTR: {alvo['viatura'].upper()}")
+                    
+                    # Fotos (Simplificado)
+                    pdf.set_fill_color(200, 200, 200); pdf.rect(10, 75, 93, 65, 'D')
+                    pdf.rect(105, 75, 95, 65, 'D')
+                    
+                    # Rota Tática QR Code
+                    rota_url = f"https://www.google.com/maps/dir/{st.session_state.missao['ponto'].replace(' ','+')}/{ed['rua'].replace(' ','+')}"
+                    qr = qrcode.make(rota_url).save("t_qr.png")
+                    pdf.image("t_qr.png", 10, 175, 25, 25)
+                    pdf.set_xy(38, 180); pdf.set_font("Arial", 'B', 8); pdf.cell(100, 5, "ROTA: PONTO ENCONTRO -> ALVO")
+                    
                     pdf.draw_footer_fiel()
             
-            pdf_out = pdf.output(dest='S').encode('latin-1', 'replace')
-            st.download_button("⬇️ BAIXAR PDF COMPLETO", data=pdf_out, file_name="Operacao_Completa.pdf")
+            # CORREÇÃO DO ERRO DE GERAÇÃO:
+            pdf_bytes = pdf.output()
+            st.download_button("⬇️ BAIXAR PDF OPERACIONAL", data=pdf_bytes, file_name="Dossie_Operacional.pdf", mime="application/pdf")
 
-# --- TELA 2: EDITAR MISSÃO (MODAL DO LÁPIS) ---
+# --- TELA 2: EDITAR MISSÃO ---
 elif st.session_state.view == 'edit_missao':
-    st.markdown("<h2>🖊️ EDITAR DADOS DA OPERAÇÃO</h2>", unsafe_allow_html=True)
+    st.title("🖊️ EDITAR DADOS DA OPERAÇÃO")
     with st.container():
         st.session_state.missao['nome'] = st.text_input("Nome da Operação", st.session_state.missao['nome'])
-        st.session_state.missao['unidade'] = st.text_input("Equipe Responsável", st.session_state.missao['unidade'])
-        st.session_state.missao['ponto'] = st.text_input("Endereço do Briefing", st.session_state.missao['ponto'])
-        c1, c2 = st.columns(2)
-        st.session_state.missao['data_br'] = c1.text_input("Horário Briefing", st.session_state.missao['data_br'])
-        st.session_state.missao['h_hora'] = c2.text_input("H-Hora (Execução)", st.session_state.missao['h_hora'])
-        st.session_state.missao['resumo'] = st.text_area("Resumo da Missão", st.session_state.missao['resumo'])
-        
-        c_b1, c_b2 = st.columns(2)
-        if c_b1.button("Cancelar"): ir_para('painel')
-        if c_b2.button("Salvar Alterações"): ir_para('painel')
+        st.session_state.missao['ponto'] = st.text_input("Endereço do Ponto de Encontro", st.session_state.missao['ponto'])
+        st.session_state.missao['h_hora'] = st.text_input("H-Hora", st.session_state.missao['h_hora'])
+        if st.button("Salvar e Voltar"): st.session_state.view = 'painel'; st.rerun()
 
-# --- TELA 3: NOVO ALVO TÁTICO (FORMULÁRIO ORGANIZADO) ---
+# --- TELA 3: NOVO ALVO TÁTICO ---
 elif st.session_state.view == 'novo_alvo':
-    st.markdown("<h2>🎯 NOVO ALVO TÁTICO</h2>", unsafe_allow_html=True)
+    st.title("🎯 NOVO ALVO TÁTICO")
     
-    if 'temp_equipe' not in st.session_state: st.session_state.temp_equipe = []
-    if 'temp_ends' not in st.session_state: st.session_state.temp_ends = []
+    if 't_equipe' not in st.session_state: st.session_state.t_equipe = []
+    if 't_ends' not in st.session_state: st.session_state.t_ends = []
 
-    with st.container():
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("👤 QUALIFICAÇÃO DO OBJETIVO")
-            nome = st.text_input("Nome Completo")
-            vulgo = st.text_input("Vulgo / Apelido")
-            tipo = st.selectbox("Tipo", ["Busca e Apreensão", "Prisão Preventiva"])
-            viatura = st.text_input("Viatura (VTR)")
-            foto_alvo = st.file_uploader("Retrato do Alvo")
-        
-        with col2:
-            st.write("👥 COMPOSIÇÃO DA EQUIPE")
-            membro = st.text_input("Nome do Policial")
-            if st.button("➕ Adicionar Integrante"):
-                if membro: st.session_state.temp_equipe.append(membro)
-            st.info(f"Equipe: {', '.join(st.session_state.temp_equipe)}")
+    c1, c2 = st.columns(2)
+    with c1:
+        nome = st.text_input("Nome Completo")
+        vulgo = st.text_input("Vulgo / Apelido")
+        tipo = st.selectbox("Tipo", ["Busca e Apreensão", "Prisão Preventiva"])
+        vtr = st.text_input("Viatura (VTR)")
+    
+    with c2:
+        membro = st.text_input("Adicionar Policial na Equipe")
+        if st.button("➕ Integrante"):
+            if membro: st.session_state.t_equipe.append(membro)
+        st.info(f"Equipe: {', '.join(st.session_state.t_equipe)}")
 
-        st.divider()
-        st.write("📍 ENDEREÇOS DE CUMPRIMENTO")
-        end_rua = st.text_input("Endereço (Rua, Nº, Bairro)")
-        end_obs = st.text_area("Observações Táticas")
-        foto_casa = st.file_uploader("Foto da Fachada")
-        if st.button("➕ Adicionar Este Endereço"):
-            if end_rua: st.session_state.temp_ends.append({'rua': end_rua, 'obs': end_obs, 'foto': foto_casa})
-        st.success(f"{len(st.session_state.temp_ends)} endereço(s) vinculados a este alvo.")
+    st.divider()
+    st.write("📍 ENDEREÇOS")
+    end_rua = st.text_input("Endereço Completo (Rua, Nº, Bairro, Cidade)")
+    
+    # VÍNCULO COM GOOGLE MAPS EM TEMPO REAL
+    if end_rua:
+        maps_link = f"https://www.google.com/maps/search/{end_rua.replace(' ', '+')}"
+        st.markdown(f"[📍 Verificar este endereço no Google Maps]({maps_link})")
 
-        c_f1, c_f2 = st.columns(2)
-        if c_f1.button("CANCELAR"): 
-            st.session_state.temp_equipe = []; st.session_state.temp_ends = []; ir_para('painel')
-        if c_f2.button("✅ SALVAR ALVO NO PAINEL"):
-            novo = {
-                'nome': nome, 'vulgo': vulgo, 'tipo': tipo, 'viatura': viatura,
-                'equipe': st.session_state.temp_equipe, 'enderecos': st.session_state.temp_ends,
-                'foto': foto_alvo
-            }
-            st.session_state.alvos.append(novo)
-            st.session_state.temp_equipe = []; st.session_state.temp_ends = []; ir_para('painel')
-            st.rerun()
+    obs = st.text_area("Observações do Local")
+    if st.button("➕ Adicionar Endereço a este Alvo"):
+        if end_rua: st.session_state.t_ends.append({'rua': end_rua, 'obs': obs})
+    st.success(f"{len(st.session_state.t_ends)} endereço(s) cadastrados.")
+
+    col_btn1, col_btn2 = st.columns(2)
+    if col_btn1.button("CANCELAR"): st.session_state.view = 'painel'; st.rerun()
+    if col_btn2.button("✅ SALVAR ALVO"):
+        st.session_state.alvos.append({
+            'nome': nome, 'vulgo': vulgo, 'tipo': tipo, 'viatura': vtr,
+            'equipe': st.session_state.t_equipe, 'enderecos': st.session_state.t_ends
+        })
+        st.session_state.t_equipe = []; st.session_state.t_ends = []; st.session_state.view = 'painel'; st.rerun()
