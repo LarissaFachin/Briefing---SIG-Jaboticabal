@@ -12,11 +12,9 @@ st.set_page_config(page_title="TACTICAL OPS", layout="wide", page_icon="🛡️"
 # --- CSS DE ALTA PERFORMANCE VISUAL ---
 st.markdown("""
     <style>
-    /* Fundo e Tipografia */
     .main { background-color: #0d1117; }
     h1, h2, h3 { color: #58a6ff !important; font-family: 'Inter', sans-serif; letter-spacing: -0.5px; }
     
-    /* Estilização de Containers */
     div[data-testid="stExpander"], div.stVerticalBlock > div[style*="border"] {
         background-color: #161b22 !important;
         border: 1px solid #30363d !important;
@@ -24,7 +22,6 @@ st.markdown("""
         padding: 15px !important;
     }
 
-    /* BOTÃO: ADICIONAR NOVO ALVO (BLUE) */
     div.stButton > button[key="btn_add_alvo"] {
         background-color: #238636 !important;
         color: white !important;
@@ -34,10 +31,8 @@ st.markdown("""
         font-weight: bold !important;
         width: 100% !important;
         border-radius: 8px !important;
-        box-shadow: 0 4px 12px rgba(35, 134, 54, 0.3) !important;
     }
 
-    /* BOTÃO: GERAR DOSSIÊ (BLUE) */
     div.stButton > button[key="btn_gerar_pdf"] {
         background-color: #1f6feb !important;
         color: white !important;
@@ -46,26 +41,19 @@ st.markdown("""
         font-weight: 900 !important;
         width: 100% !important;
         border-radius: 10px !important;
-        border: none !important;
-        box-shadow: 0 10px 20px rgba(31, 111, 235, 0.4) !important;
         text-transform: uppercase;
     }
 
-    /* BOTÕES SECUNDÁRIOS (ADICIONAR AGENTE/ENDEREÇO) */
     div.stButton > button[key*="ba_"], div.stButton > button[key*="be_"] {
         background-color: #30363d !important;
         color: #c9d1d9 !important;
-        border: 1px solid #484f58 !important;
     }
 
-    /* BOTÃO: REMOVER (VERMELHO) */
     div.stButton > button[key*="rem_"] {
         background-color: #da3633 !important;
         color: white !important;
-        border: none !important;
     }
 
-    /* Ajuste de Labels */
     label { color: #8b949e !important; font-size: 12px !important; font-weight: 600 !important; text-transform: uppercase; }
     </style>
 """, unsafe_allow_html=True)
@@ -76,11 +64,11 @@ if 'alvos' not in st.session_state:
 # --- CLASSE DO PDF DE INTELIGÊNCIA ---
 class TacticalPDF(FPDF):
     def header(self):
-        self.set_fill_color(1, 4, 9)
+        self.set_fill_color(0, 0, 0)
         self.set_text_color(255, 255, 255)
-        self.set_font('Helvetica', 'B', 8)
-        self.cell(0, 6, 'SIGILOSO - DOCUMENTO DE INTELIGÊNCIA - RESTRITO', 0, 1, 'C', True)
-        self.ln(3)
+        self.set_font('Helvetica', 'B', 9)
+        self.cell(0, 7, 'SIGILOSO  -  DOCUMENTO DE INTELIGÊNCIA  -  RESTRITO', 0, 1, 'C', True)
+        self.ln(2)
 
     def draw_pattern_grid(self, x, y, label):
         self.set_font('Helvetica', 'B', 7)
@@ -126,11 +114,10 @@ st.title("🛡️ TACTICAL OPS FRAMEWORK")
 with st.container(border=True):
     st.subheader("📋 Configuração da Missão")
     c1, c2 = st.columns([2, 1])
-    nome_op = c1.text_input("NOME DA OPERAÇÃO", "OPERAÇÃO")
+    nome_op = c1.text_input("NOME DA OPERAÇÃO", "OPERAÇÃO CERBERUS")
     unidade = c1.text_input("UNIDADE DE COMANDO", "SIG JABOTICABAL")
     data_op = c2.text_input("DATA/HORA BRIEFING", "27/01/2026 03:30")
     h_hora = c2.text_input("H-HORA (EXECUÇÃO)", "06:00")
-    # ENDEREÇO ATUALIZADO CONFORME SOLICITADO
     end_origem = st.text_input("📍 PONTO DE PARTIDA (GPS)", "Praça Pedro Dória, s/n, Centro, Jaboticabal - SP, CEP: 14870-000")
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -142,7 +129,6 @@ if st.button("➕ ADICIONAR NOVO ALVO TÁTICO", key="btn_add_alvo"):
         'foto_alvo': None, 'foto_casa': None
     })
 
-# LOOP DE ALVOS
 for idx, alvo in enumerate(st.session_state.alvos):
     with st.container(border=True):
         st.markdown(f"### 🎯 ALVO #{idx+1}")
@@ -151,7 +137,6 @@ for idx, alvo in enumerate(st.session_state.alvos):
         alvo['vulgo'] = col_b.text_input("Vulgo", value=alvo['vulgo'], key=f"v_{idx}")
         alvo['mandado'] = col_c.selectbox("Mandado", ["BUSCA E APREENSÃO", "PRISÃO PREVENTIVA", "TEMPORÁRIA"], key=f"m_{idx}")
         
-        # Logística
         st.markdown("---")
         st.write("👥 **Logística e Equipe Escalada**")
         alvo['viatura'] = st.text_input("Viatura (Prefixo/Modelo)", value=alvo['viatura'], key=f"via_{idx}")
@@ -164,13 +149,11 @@ for idx, alvo in enumerate(st.session_state.alvos):
         if st.button("➕ Adicionar Policial", key=f"ba_{idx}"):
             alvo['agentes'].append(''); st.rerun()
 
-        # Fotos
         st.markdown("---")
         f1, f2 = st.columns(2)
         alvo['foto_alvo'] = f1.file_uploader("📸 Retrato do Alvo", key=f"fa_{idx}")
         alvo['foto_casa'] = f2.file_uploader("🏠 Fachada da Residência", key=f"fc_{idx}")
 
-        # Endereços
         st.write("📍 **Localidades e Alvos GPS**")
         for e_i, end in enumerate(alvo['enderecos']):
             alvo['enderecos'][e_i] = st.text_input(f"Endereço {e_i+1}", value=end, key=f"e_{idx}_{e_i}")
@@ -182,7 +165,6 @@ for idx, alvo in enumerate(st.session_state.alvos):
         if st.button("🗑️ Remover Alvo do Plano", key=f"rem_{idx}"):
             st.session_state.alvos.pop(idx); st.rerun()
 
-# GERAR PDF
 if st.session_state.alvos:
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", key="btn_gerar_pdf"):
@@ -190,42 +172,66 @@ if st.session_state.alvos:
         for i, alvo in enumerate(st.session_state.alvos):
             pdf.add_page()
             
-            if i == 0:
-                pdf.set_font('Helvetica', 'B', 18); pdf.set_text_color(0, 30, 80)
-                pdf.cell(0, 10, nome_op.upper(), 0, 1)
-                pdf.set_font('Helvetica', 'B', 10); pdf.cell(0, 5, f"UNIDADE: {unidade.upper()}", 0, 1)
-                pdf.ln(2)
-                pdf.set_fill_color(240, 240, 240); pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(0,0,0)
-                pdf.cell(63, 8, f" ORIGEM: {end_origem[:30]}", 1, 0, 'L', True)
-                pdf.cell(63, 8, f" BRIEFING: {data_op}", 1, 0, 'L', True)
-                pdf.cell(64, 8, f" H-HORA: {h_hora}", 1, 1, 'L', True)
-                pdf.ln(5)
-
-            # Barra do Alvo
-            pdf.set_fill_color(0, 35, 90); pdf.set_text_color(255, 255, 255); pdf.set_font('Helvetica', 'B', 12)
-            pdf.cell(125, 10, f" ALVO: {alvo['nome'].upper()}", 0, 0, 'L', True)
-            pdf.cell(65, 10, alvo['mandado'], 0, 1, 'R', True)
+            # 1. NOME DA OPERAÇÃO (PRETO E CENTRALIZADO)
+            pdf.set_text_color(0, 0, 0)
+            pdf.set_font('Helvetica', 'B', 22)
+            pdf.cell(0, 12, nome_op.upper(), 0, 1, 'C')
             
-            pdf.set_text_color(0,0,0); pdf.set_font('Helvetica', 'B', 9)
-            pdf.cell(0, 6, f"VULGO: {alvo['vulgo']}", 0, 1)
+            # Sub-cabeçalho da Unidade
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.cell(0, 5, f"COMANDO OPERACIONAL: {unidade.upper()}", 0, 1, 'R')
+            pdf.ln(2)
+
+            # Barra de Dados da Operação (Grid)
+            pdf.set_fill_color(240, 240, 240)
+            pdf.set_text_color(0, 0, 0)
+            pdf.set_font('Helvetica', 'B', 7)
+            pdf.cell(48, 8, f" PONTO ENCONTRO: {end_origem[:20]}...", 1, 0, 'L', True)
+            pdf.cell(48, 8, f" BRIEFING: {data_op}", 1, 0, 'L', True)
+            pdf.cell(48, 8, f" H-HORA: {h_hora}", 1, 0, 'L', True)
+            pdf.cell(46, 8, f" ID MISSÃO: #748599", 1, 1, 'L', True)
+            pdf.ln(4)
+
+            # 2. MANDADO (CENTRALIZADO EM BARRA AZUL)
+            pdf.set_fill_color(0, 35, 90)
+            pdf.set_text_color(255, 255, 255)
+            pdf.set_font('Helvetica', 'B', 12)
+            pdf.cell(0, 10, alvo['mandado'].upper(), 0, 1, 'C', True)
+            
+            # 3. ALVO (EM OUTRA LINHA)
+            pdf.set_fill_color(0, 35, 90)
+            pdf.cell(0, 10, f" ALVO: {alvo['nome'].upper()}", 0, 1, 'L', True)
+            
+            # Vulgo logo abaixo
+            pdf.set_text_color(0, 0, 0)
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.cell(0, 6, f" VULGO: {alvo['vulgo'].upper()}", 0, 1)
 
             # Fotos
             y_f = pdf.get_y() + 2
             if alvo['foto_alvo']:
-                path_a = f"tmp_a_{i}.png"; Image.open(alvo['foto_alvo']).save(path_a)
+                path_a = f"tmp_a_{i}.png"
+                Image.open(alvo['foto_alvo']).save(path_a)
                 pdf.image(path_a, x=10, y=y_f, w=92, h=62)
-                pdf.set_xy(10, y_f + 57); pdf.set_fill_color(0,0,0); pdf.set_text_color(255,255,255)
+                pdf.set_xy(10, y_f + 57)
+                pdf.set_fill_color(0,0,0)
+                pdf.set_text_color(255,255,255)
                 pdf.cell(92, 5, " IDENTIFICAÇÃO POSITIVA", 0, 0, 'L', True)
+            
             if alvo['foto_casa']:
-                path_c = f"tmp_c_{i}.png"; Image.open(alvo['foto_casa']).save(path_c)
+                path_c = f"tmp_c_{i}.png"
+                Image.open(alvo['foto_casa']).save(path_c)
                 pdf.image(path_c, x=105, y=y_f, w=95, h=62)
-                pdf.set_xy(105, y_f + 57); pdf.set_text_color(255,255,255)
+                pdf.set_xy(105, y_f + 57)
+                pdf.set_text_color(255,255,255)
                 pdf.cell(95, 5, " PERÍMETRO DE ENTRADA", 0, 1, 'L', True)
             
-            pdf.set_y(y_f + 68); pdf.set_text_color(0,0,0)
+            pdf.set_y(y_f + 68)
+            pdf.set_text_color(0, 0, 0)
             
-            # Logística (Equipe)
-            pdf.set_font('Helvetica', 'B', 10); pdf.cell(0, 8, "LOGÍSTICA E EQUIPE OPERACIONAL", 'B', 1); pdf.ln(2)
+            # Logística
+            pdf.set_font('Helvetica', 'B', 10)
+            pdf.cell(0, 8, "LOGÍSTICA E EQUIPE OPERACIONAL", 'B', 1); pdf.ln(2)
             pdf.set_font('Helvetica', 'B', 9); pdf.cell(22, 6, "VIATURA: ", 0, 0)
             pdf.set_font('Helvetica', '', 9); pdf.cell(0, 6, alvo['viatura'].upper(), 0, 1)
             pdf.set_font('Helvetica', 'B', 9); pdf.cell(22, 6, "EFETIVO: ", 0, 0)
@@ -233,14 +239,17 @@ if st.session_state.alvos:
             pdf.multi_cell(0, 6, " | ".join([a for a in alvo['agentes'] if a.strip()]))
             pdf.ln(3)
 
-            # Rotas (GPS)
-            pdf.set_font('Helvetica', 'B', 10); pdf.cell(0, 8, "ROTAS GPS TÁTICAS", 'B', 1); pdf.ln(2)
+            # Rotas
+            pdf.set_font('Helvetica', 'B', 10)
+            pdf.cell(0, 8, "ROTAS GPS TÁTICAS", 'B', 1); pdf.ln(2)
             for end in alvo['enderecos']:
                 if end.strip():
-                    qr_p = gerar_qr_rota(end_origem, end); curr_y = pdf.get_y()
+                    qr_p = gerar_qr_rota(end_origem, end)
+                    curr_y = pdf.get_y()
                     if curr_y > 185: pdf.add_page(); curr_y = 20
                     pdf.image(qr_p, x=10, y=curr_y, w=22)
-                    pdf.set_xy(35, curr_y + 4); pdf.set_font('Helvetica', 'B', 8)
+                    pdf.set_xy(35, curr_y + 4)
+                    pdf.set_font('Helvetica', 'B', 8)
                     pdf.multi_cell(0, 4, f"DESTINO: {end.upper()}\nSAÍDA: {end_origem.upper()}")
                     pdf.set_y(curr_y + 25); os.remove(qr_p)
 
