@@ -114,7 +114,8 @@ st.title("🛡️ TACTICAL OPS FRAMEWORK")
 with st.container(border=True):
     st.subheader("📋 Configuração da Missão")
     c1, c2 = st.columns([2, 1])
-    nome_op = c1.text_input("NOME DA OPERAÇÃO", "OPERAÇÃO CERBERUS")
+    # AJUSTE: Removido 'CERBERUS'
+    nome_op = c1.text_input("NOME DA OPERAÇÃO", "OPERAÇÃO")
     unidade = c1.text_input("UNIDADE DE COMANDO", "SIG JABOTICABAL")
     data_op = c2.text_input("DATA/HORA BRIEFING", "27/01/2026 03:30")
     h_hora = c2.text_input("H-HORA (EXECUÇÃO)", "06:00")
@@ -198,13 +199,14 @@ if st.session_state.alvos:
             pdf.set_font('Helvetica', 'B', 12)
             pdf.cell(0, 10, alvo['mandado'].upper(), 0, 1, 'C', True)
             
-            # 3. ALVO (EM OUTRA LINHA)
-            pdf.set_fill_color(0, 35, 90)
-            pdf.cell(0, 10, f" ALVO: {alvo['nome'].upper()}", 0, 1, 'L', True)
+            # 3. ALVO (AJUSTADO: FORA DA BARRA AZUL, EM NEGRITO)
+            pdf.ln(2)
+            pdf.set_text_color(0, 0, 0)
+            pdf.set_font('Helvetica', 'B', 14)
+            pdf.cell(0, 10, f" ALVO: {alvo['nome'].upper()}", 0, 1, 'L')
             
             # Vulgo logo abaixo
-            pdf.set_text_color(0, 0, 0)
-            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_font('Helvetica', 'B', 10)
             pdf.cell(0, 6, f" VULGO: {alvo['vulgo'].upper()}", 0, 1)
 
             # Fotos
@@ -233,10 +235,11 @@ if st.session_state.alvos:
             pdf.set_font('Helvetica', 'B', 10)
             pdf.cell(0, 8, "LOGÍSTICA E EQUIPE OPERACIONAL", 'B', 1); pdf.ln(2)
             pdf.set_font('Helvetica', 'B', 9); pdf.cell(22, 6, "VIATURA: ", 0, 0)
-            pdf.set_font('Helvetica', '', 9); pdf.cell(0, 6, alvo['viatura'].upper(), 0, 1)
+            pdf.set_font('Helvetica', '', 9); pdf.cell(0, 6, alvo['viatura'].upper() if alvo['viatura'] else "NÃO INFORMADA", 0, 1)
             pdf.set_font('Helvetica', 'B', 9); pdf.cell(22, 6, "EFETIVO: ", 0, 0)
             pdf.set_font('Helvetica', '', 9)
-            pdf.multi_cell(0, 6, " | ".join([a for a in alvo['agentes'] if a.strip()]))
+            agentes_str = " | ".join([a for a in alvo['agentes'] if a.strip()])
+            pdf.multi_cell(0, 6, agentes_str if agentes_str else "NÃO INFORMADO")
             pdf.ln(3)
 
             # Rotas
