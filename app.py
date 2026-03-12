@@ -23,7 +23,7 @@ st.markdown("""
 if 'alvos' not in st.session_state:
     st.session_state.alvos = []
 
-# --- CLASSE DO PDF (ESTRUTURA IDENTICA AO MODELO) ---
+# --- CLASSE DO PDF (ESTRUTURA PROFISSIONAL IDENTICA AO MODELO) ---
 class TacticalPDF(FPDF):
     def header(self):
         # Tarja Preta Superior
@@ -34,8 +34,8 @@ class TacticalPDF(FPDF):
         self.ln(5)
 
     def draw_section_bullet(self, x, y):
-        """Desenha o quadradinho azul de seção para evitar erro de caractere especial"""
-        self.set_fill_color(26, 51, 126) # Azul Marinho
+        """Desenha o quadradinho azul de seção (evita erro Unicode)"""
+        self.set_fill_color(26, 51, 126) 
         self.rect(x, y + 1.5, 3, 3, 'F')
 
     def footer(self):
@@ -49,7 +49,7 @@ class TacticalPDF(FPDF):
         curr_y = self.get_y() + 5
         # Grids de Desbloqueio (DISP 1 a 4)
         for i in range(1, 5):
-            x_pos = 15 + ((i-1)*18) if i <= 4 else 15
+            x_pos = 15 + ((i-1)*20)
             self.set_font('Helvetica', 'B', 6)
             self.set_text_color(100, 100, 100)
             self.text(x_pos, curr_y - 2, f"DISP. {i}")
@@ -58,12 +58,12 @@ class TacticalPDF(FPDF):
                     self.ellipse(x_pos + (c * 4), curr_y + (r * 4), 0.8, 0.8)
         
         # Checklist IMEI
-        self.line(85, curr_y - 2, 85, curr_y + 20)
-        self.set_xy(90, curr_y - 2)
+        self.line(100, curr_y - 2, 100, curr_y + 20)
+        self.set_xy(105, curr_y - 2)
         self.set_font('Helvetica', 'B', 7)
         self.cell(0, 4, 'CHECKLIST DE DISPOSITIVOS (IMEI/SN)', 0, 1)
         for _ in range(2):
-            self.set_x(90)
+            self.set_x(105)
             self.cell(0, 8, '', 'B', 1)
 
         # Rodapé Institucional
@@ -73,7 +73,7 @@ class TacticalPDF(FPDF):
         agora = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
         self.cell(60, 10, 'TACTICALOPS INTELLIGENCE FRAMEWORK', 0, 0, 'L')
         self.cell(70, 10, f'DATA/HORA DOC: {agora}', 0, 0, 'C')
-        self.cell(0, 10, f'PÁGINA {self.page_no()} DE {self.page_no()}', 0, 0, 'R')
+        self.cell(0, 10, f'PÁGINA {self.page_no()}', 0, 0, 'R')
 
 def gerar_qr(orig, dest):
     url = f"https://www.google.com/maps/dir/?api=1&origin={urllib.parse.quote(orig)}&destination={urllib.parse.quote(dest)}"
@@ -82,7 +82,7 @@ def gerar_qr(orig, dest):
     qr.save(path)
     return path
 
-# --- INTERFACE ---
+# --- INTERFACE STREAMLIT ---
 st.title("🛡️ TACTICAL OPS: SIG JABOTICABAL")
 
 with st.container(border=True):
@@ -98,19 +98,19 @@ st.markdown("<br>", unsafe_allow_html=True)
 if st.button("➕ ADICIONAR NOVO ALVO", key="add"):
     st.session_state.alvos.append({
         'nome': '', 'vulgo': '', 'mandado': 'BUSCA E APREENSÃO',
-        'enderecos': [''], 'agentes': [''], 'viatura': '',
+        'enderecos': [''], 'agentes': '', 'viatura': '',
         'foto_alvo': None, 'foto_casa': None
     })
 
 for idx, alvo in enumerate(st.session_state.alvos):
     with st.expander(f"🎯 ALVO #{idx+1}", expanded=True):
         c1, c2, c3 = st.columns([2, 1, 1])
-        alvo['nome'] = c1.text_input("Nome / Alvo", key=f"n_{idx}")
+        alvo['nome'] = c1.text_input("Nome Completo", key=f"n_{idx}")
         alvo['vulgo'] = c2.text_input("Vulgo", key=f"v_{idx}")
         alvo['mandado'] = c3.selectbox("Mandado", ["BUSCA E APREENSÃO", "PRISÃO PREVENTIVA", "TEMPORÁRIA"], key=f"m_{idx}")
         
-        alvo['viatura'] = st.text_input("Viatura / Equipe", key=f"via_{idx}")
-        alvo['agentes'] = st.text_area("Agentes Escalados (Separe por vírgula)", key=f"a_{idx}")
+        alvo['viatura'] = st.text_input("Viatura / Prefixo", key=f"via_{idx}")
+        alvo['agentes'] = st.text_area("Agentes Escalados", key=f"a_{idx}")
 
         f1, f2 = st.columns(2)
         alvo['foto_alvo'] = f1.file_uploader("Foto do Alvo", key=f"fa_{idx}")
@@ -127,11 +127,11 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
     for i, alvo in enumerate(st.session_state.alvos):
         pdf.add_page()
         
-        # Cabeçalho: Nome Operação e Comando
+        # Cabeçalho: Operação e Comando
         pdf.set_font('Helvetica', 'B', 24); pdf.set_text_color(0, 0, 0)
         pdf.cell(130, 10, nome_op.upper(), 0, 0)
         
-        # Comando Operacional (Direita com linha)
+        # Comando Operacional (Direita)
         pdf.line(148, 20, 148, 32)
         pdf.set_xy(150, 22); pdf.set_font('Helvetica', '', 6); pdf.set_text_color(100, 100, 100)
         pdf.cell(50, 4, 'COMANDO OPERACIONAL', 0, 1, 'R')
@@ -154,7 +154,7 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
         pdf.set_text_color(200, 0, 0); pdf.cell(47, 8, h_hora, 'BLR', 0)
         pdf.set_text_color(0, 0, 0); pdf.cell(47, 8, f'#{i+1001:06d}', 'BLR', 1)
 
-        # Banner de Mandado
+        # Banner Azul de Mandado
         pdf.ln(4)
         pdf.set_fill_color(26, 51, 126); pdf.set_text_color(255, 255, 255)
         pdf.set_font('Helvetica', 'B', 11)
@@ -166,7 +166,7 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
         if alvo['foto_alvo']:
             Image.open(alvo['foto_alvo']).save(f"tmp_a_{i}.png")
             pdf.image(f"tmp_a_{i}.png", x=10, y=y_fotos, w=93, h=65)
-            pdf.set_xy(10, y_fotos + 60); pdf.set_fill_color(0,0,0,100); pdf.set_text_color(255,255,255)
+            pdf.set_xy(10, y_fotos + 60); pdf.set_fill_color(0,0,0); pdf.set_text_color(255,255,255)
             pdf.set_font('Helvetica', 'B', 7); pdf.cell(93, 5, " IDENTIFICAÇÃO POSITIVA", 0, 0, 'L', True)
 
         if alvo['foto_casa']:
@@ -176,25 +176,21 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
             pdf.cell(93, 5, " PERÍMETRO DE ENTRADA", 0, 0, 'L', True)
         
         # Colunas Inteligência e Logística
-        pdf.set_y(y_fotos + 72)
-        curr_y = pdf.get_y()
+        pdf.set_y(y_fotos + 72); curr_y = pdf.get_y()
         
-        # Coluna 1
         pdf.draw_section_bullet(10, curr_y)
         pdf.set_xy(14, curr_y); pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(30, 50, 120)
         pdf.cell(91, 6, 'INTELIGÊNCIA ESTRATÉGICA', 0, 0)
         
-        # Coluna 2
         pdf.draw_section_bullet(107, curr_y)
         pdf.set_xy(111, curr_y); pdf.cell(89, 6, 'LOGÍSTICA DE EQUIPE', 0, 1)
         
         pdf.set_font('Helvetica', '', 7); pdf.set_text_color(100, 100, 100)
-        pdf.set_x(10); pdf.cell(95, 4, 'LOCAL DE INVASÃO / ENDEREÇO / ALVO', 0, 0)
+        pdf.set_x(10); pdf.cell(95, 4, 'ALVO / ENDEREÇO DE CUMPRIMENTO', 0, 0)
         pdf.cell(95, 4, 'VIATURA / EFETIVO OPERACIONAL', 0, 1)
         
-        pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(0, 0, 0)
-        y_desc = pdf.get_y()
-        pdf.multi_cell(92, 4, f"ALVO: {alvo['nome'].upper()} (VULGO: {alvo['vulgo']})\nLOCAL: {alvo['enderecos'][0]}", 0, 'L')
+        pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(0, 0, 0); y_desc = pdf.get_y()
+        pdf.multi_cell(92, 4, f"ALVO: {alvo['nome'].upper()}\nENDEREÇO: {alvo['enderecos'][0]}", 0, 'L')
         pdf.set_xy(107, y_desc)
         pdf.multi_cell(93, 4, f"VTR: {alvo['viatura'].upper()}\nAGENTES: {alvo['agentes']}", 0, 'L')
 
@@ -203,14 +199,14 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
         pdf.set_fill_color(248, 250, 255); pdf.rect(10, pdf.get_y(), 190, 25, 'F')
         qr_p = gerar_qr(end_origem, alvo['enderecos'][0])
         pdf.image(qr_p, x=12, y=pdf.get_y() + 2, w=20)
-        pdf.set_xy(35, pdf.get_y() + 4)
-        pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(30, 50, 120); pdf.cell(0, 5, 'ROTA GPS TÁTICA', 0, 1)
+        pdf.set_xy(35, pdf.get_y() + 4); pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(30, 50, 120)
+        pdf.cell(0, 5, 'ROTA GPS TÁTICA', 0, 1)
         pdf.set_font('Helvetica', '', 7); pdf.set_text_color(100, 100, 100)
-        pdf.set_x(35); pdf.multi_cell(0, 4, f"Escaneie o QR Code com seu celular para abrir a rota no Google Maps automaticamente.\nORIGEM: {end_origem} -> DESTINO: {alvo['enderecos'][0]}")
+        pdf.set_x(35); pdf.multi_cell(0, 4, f"Escaneie o QR Code para abrir no Google Maps.\nORIGEM: {end_origem} -> DESTINO: {alvo['enderecos'][0]}")
         os.remove(qr_p)
 
-    # Finalizar
+    # Nome correto para evitar NameError
     output_pdf = "Dossie_SIG_Jaboticabal.pdf"
     pdf.output(output_pdf)
     with open(output_pdf, "rb") as f:
-        st.download_button("📩 BAIXAR DOSSIÊ TÁTICO FINAL", f, file_name=output_name)
+        st.download_button("📩 BAIXAR DOSSIÊ TÁTICO FINAL", f, file_name=output_pdf)
