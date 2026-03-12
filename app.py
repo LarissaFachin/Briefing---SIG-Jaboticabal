@@ -24,7 +24,7 @@ st.markdown("""
         padding: 15px !important;
     }
 
-    /* BOTÃO: ADICIONAR NOVO ALVO (AZUL) */
+    /* BOTÃO: ADICIONAR NOVO ALVO (BLUE) */
     div.stButton > button[key="btn_add_alvo"] {
         background-color: #238636 !important;
         color: white !important;
@@ -37,7 +37,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(35, 134, 54, 0.3) !important;
     }
 
-    /* BOTÃO: GERAR DOSSIÊ (AZUL) */
+    /* BOTÃO: GERAR DOSSIÊ (BLUE) */
     div.stButton > button[key="btn_gerar_pdf"] {
         background-color: #1f6feb !important;
         color: white !important;
