@@ -31,21 +31,20 @@ class TacticalPDF(FPDF):
         self.set_text_color(255, 255, 255)
         self.set_font('Helvetica', 'B', 8)
         self.cell(0, 6, 'S I G I L O S O   -   D O C U M E N T O   D E   I N T E L I G Ê N C I A   -   R E S T R I T O', 0, 1, 'C', True)
-        self.ln(5)
+        self.ln(3)
 
     def draw_section_bullet(self, x, y):
         self.set_fill_color(26, 51, 126) 
-        self.rect(x, y + 1.5, 3, 3, 'F')
+        self.rect(x, y + 1.2, 2.5, 2.5, 'F')
 
     def draw_footer_elements(self):
-        # Relatório de Ocorrência e Grids técnicos
-        self.set_y(-75)
+        self.set_y(-72) # Ajuste fino para o rodapé caber
         self.set_font('Helvetica', 'B', 9)
         self.set_text_color(0, 0, 0)
         self.cell(0, 8, 'R E L A T Ó R I O  D E  O C O R R Ê N C I A  E  A P R E E N S Õ E S  D E  C A M P O', 'B', 1, 'C')
         for _ in range(3): self.cell(0, 6, '', 'B', 1)
         
-        curr_y = self.get_y() + 5
+        curr_y = self.get_y() + 4
         for i in range(1, 5):
             x_pos = 15 + ((i-1)*18)
             self.set_font('Helvetica', 'B', 6); self.set_text_color(100, 100, 100)
@@ -54,12 +53,12 @@ class TacticalPDF(FPDF):
                 for c in range(3):
                     self.ellipse(x_pos + (c * 4), curr_y + (r * 4), 0.8, 0.8)
         
-        self.line(100, curr_y - 2, 100, curr_y + 20)
+        self.line(100, curr_y - 2, 100, curr_y + 18)
         self.set_xy(105, curr_y - 2); self.set_font('Helvetica', 'B', 7)
         self.cell(0, 4, 'CHECKLIST DE DISPOSITIVOS (IMEI/SN)', 0, 1)
-        for _ in range(2): self.set_x(105); self.cell(0, 8, '', 'B', 1)
+        for _ in range(2): self.set_x(105); self.cell(0, 7, '', 'B', 1)
 
-        self.set_y(-10); self.set_font('Helvetica', '', 6); self.set_text_color(150, 150, 150)
+        self.set_y(-8); self.set_font('Helvetica', '', 6); self.set_text_color(150, 150, 150)
         agora = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
         self.cell(60, 10, 'TACTICALOPS INTELLIGENCE FRAMEWORK', 0, 0, 'L')
         self.cell(70, 10, f'DATA/HORA DOC: {agora}', 0, 0, 'C')
@@ -82,10 +81,10 @@ with st.container(border=True):
     unidade = c1.text_input("UNIDADE DE COMANDO", "SIG JABOTICABAL")
     data_op = c2.text_input("DATA/HORA BRIEFING", "27/01/2026 03:30")
     h_hora = c2.text_input("H-HORA (EXECUÇÃO)", "06:00")
-    end_origem = st.text_input("📍 PONTO DE PARTIDA (GPS)", "Praça Pedro Dória, s/n, Centro, Jaboticabal - SP")
+    end_origem = st.text_input("📍 PONTO DE PARTIDA (GPS)", "Praça Pedro Dória, s/n, Centro, Jaboticabal - SP, CEP: 14870-000")
 
 st.markdown("<br>", unsafe_allow_html=True)
-if st.button("➕ ADICIONAR NOVO ALVO TÁTICO", key="add"):
+if st.button("➕ ADICIONAR NOVO ALVO", key="add"):
     st.session_state.alvos.append({
         'nome': '', 'vulgo': '', 'mandado': 'BUSCA E APREENSÃO',
         'enderecos': [''], 'agentes': '', 'viatura': '',
@@ -116,31 +115,31 @@ for idx, alvo in enumerate(st.session_state.alvos):
             alvo['enderecos'].append('')
             st.rerun()
 
-        if st.button("🗑️ Remover Este Alvo", key=f"rem_{idx}"):
+        if st.button("🗑️ Remover Alvo", key=f"rem_{idx}"):
             st.session_state.alvos.pop(idx); st.rerun()
 
-# --- GERAÇÃO DO PDF ---
+# --- GERAÇÃO DO PDF COMPACTO ---
 if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", key="pdf"):
     pdf = TacticalPDF()
     for i, alvo in enumerate(st.session_state.alvos):
         pdf.add_page()
         
-        # Nome Operação e Comando
-        pdf.set_font('Helvetica', 'B', 24); pdf.set_text_color(0, 0, 0)
+        # Cabeçalho: Operação e Comando
+        pdf.set_font('Helvetica', 'B', 22); pdf.set_text_color(0, 0, 0)
         pdf.cell(130, 10, nome_op.upper(), 0, 0)
-        pdf.line(148, 20, 148, 32)
-        pdf.set_xy(150, 22); pdf.set_font('Helvetica', '', 6); pdf.set_text_color(100, 100, 100)
+        pdf.line(148, 18, 148, 28)
+        pdf.set_xy(150, 19); pdf.set_font('Helvetica', '', 6); pdf.set_text_color(100, 100, 100)
         pdf.cell(50, 4, 'COMANDO OPERACIONAL', 0, 1, 'R')
         pdf.set_font('Helvetica', 'B', 10); pdf.set_text_color(0, 0, 0)
         pdf.set_x(150); pdf.cell(50, 5, unidade.upper(), 0, 1, 'R')
         
         # Grid de Informações
-        pdf.set_y(38); pdf.set_font('Helvetica', 'B', 6); pdf.set_text_color(100, 100, 100)
+        pdf.set_y(32); pdf.set_font('Helvetica', 'B', 6); pdf.set_text_color(100, 100, 100)
         pdf.cell(47, 4, 'PONTO DE ENCONTRO', 'TLR', 0)
         pdf.cell(47, 4, 'BRIEFING (DATA/HORA)', 'TLR', 0)
         pdf.cell(47, 4, 'H-HORA (EXECUÇÃO)', 'TLR', 0)
         pdf.cell(47, 4, 'ID MISSÃO', 'TLR', 1)
-        pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(0, 0, 0)
+        pdf.set_font('Helvetica', 'B', 7); pdf.set_text_color(0, 0, 0)
         x_g, y_g = pdf.get_x(), pdf.get_y()
         pdf.multi_cell(47, 4, end_origem, 'BLR', 'L')
         pdf.set_xy(x_g + 47, y_g); pdf.set_text_color(30, 50, 120); pdf.cell(47, 8, data_op, 'BLR', 0)
@@ -148,32 +147,32 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
         pdf.set_text_color(0, 0, 0); pdf.cell(47, 8, f'#{i+1001:06d}', 'BLR', 1)
 
         # Mandado Banner
-        pdf.ln(4)
-        pdf.set_fill_color(26, 51, 126); pdf.set_text_color(255, 255, 255); pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 10, alvo['mandado'].upper(), 0, 1, 'C', True)
+        pdf.ln(2)
+        pdf.set_fill_color(26, 51, 126); pdf.set_text_color(255, 255, 255); pdf.set_font('Helvetica', 'B', 10)
+        pdf.cell(0, 8, alvo['mandado'].upper(), 0, 1, 'C', True)
 
-        # DESTAQUE DO ALVO
-        pdf.ln(2); pdf.set_text_color(0, 0, 0); pdf.set_font('Helvetica', 'B', 16)
+        # Destaque Alvo
+        pdf.ln(1); pdf.set_text_color(0, 0, 0); pdf.set_font('Helvetica', 'B', 14)
         pdf.cell(0, 8, f"ALVO: {alvo['nome'].upper()}", 0, 1)
-        pdf.set_font('Helvetica', 'B', 11); pdf.set_text_color(60, 60, 60)
-        pdf.cell(0, 6, f"VULGO: {alvo['vulgo'].upper()}", 0, 1)
+        pdf.set_font('Helvetica', 'B', 10); pdf.set_text_color(60, 60, 60)
+        pdf.cell(0, 5, f"VULGO: {alvo['vulgo'].upper()}", 0, 1)
 
-        # Fotos
-        pdf.ln(2); y_f = pdf.get_y()
+        # Fotos Compactas (50mm de altura)
+        pdf.ln(1); y_f = pdf.get_y()
         if alvo['foto_alvo']:
             Image.open(alvo['foto_alvo']).save(f"tmp_a_{i}.png")
-            pdf.image(f"tmp_a_{i}.png", x=10, y=y_f, w=93, h=65)
-            pdf.set_xy(10, y_f + 60); pdf.set_fill_color(0,0,0); pdf.set_text_color(255,255,255)
-            pdf.set_font('Helvetica', 'B', 7); pdf.cell(93, 5, " IDENTIFICAÇÃO POSITIVA", 0, 0, 'L', True)
+            pdf.image(f"tmp_a_{i}.png", x=10, y=y_f, w=93, h=50)
+            pdf.set_xy(10, y_f + 46); pdf.set_fill_color(0,0,0); pdf.set_text_color(255,255,255)
+            pdf.set_font('Helvetica', 'B', 7); pdf.cell(93, 4, " IDENTIFICAÇÃO POSITIVA", 0, 0, 'L', True)
 
         if alvo['foto_casa']:
             Image.open(alvo['foto_casa']).save(f"tmp_c_{i}.png")
-            pdf.image(f"tmp_c_{i}.png", x=107, y=y_f, w=93, h=65)
-            pdf.set_xy(107, y_f + 60); pdf.set_text_color(255,255,255)
-            pdf.cell(93, 5, " PERÍMETRO DE ENTRADA", 0, 0, 'L', True)
+            pdf.image(f"tmp_c_{i}.png", x=107, y=y_f, w=93, h=50)
+            pdf.set_xy(107, y_f + 46); pdf.set_text_color(255,255,255)
+            pdf.cell(93, 4, " PERÍMETRO DE ENTRADA", 0, 0, 'L', True)
         
         # Inteligência e Logística
-        pdf.set_y(y_f + 72); c_y = pdf.get_y()
+        pdf.set_y(y_f + 55); c_y = pdf.get_y()
         pdf.draw_section_bullet(10, c_y)
         pdf.set_xy(14, c_y); pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(30, 50, 120); pdf.cell(91, 6, 'INTELIGÊNCIA ESTRATÉGICA', 0, 0)
         pdf.draw_section_bullet(107, c_y)
@@ -183,39 +182,31 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
         pdf.set_x(10); pdf.cell(95, 4, 'LOCALIDADES CADASTRADAS', 0, 0)
         pdf.cell(95, 4, 'VIATURA / EFETIVO OPERACIONAL', 0, 1)
         
-        # Formatação de Agentes em linha
         pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(0, 0, 0); y_desc = pdf.get_y()
-        # Pega o primeiro endereço como principal para o bloco superior
-        end_principal = alvo['enderecos'][0] if alvo['enderecos'] else "SEM ENDEREÇO"
-        pdf.multi_cell(92, 4, f"LOCAL: {end_principal}", 0, 'L')
+        end_principal = alvo['enderecos'][0][:50] + "..." if len(alvo['enderecos'][0]) > 50 else alvo['enderecos'][0]
+        pdf.multi_cell(92, 4, f"LOCAL: {end_principal.upper()}", 0, 'L')
         
         pdf.set_xy(107, y_desc)
-        # Limpa os agentes para garantir que fiquem em uma linha separada por |
         agentes_limpos = " | ".join([a.strip() for a in alvo['agentes'].split(',') if a.strip()])
         pdf.multi_cell(93, 4, f"VTR: {alvo['viatura'].upper()}\nEFETIVO: {agentes_limpos}", 0, 'L')
 
-        # GPS Rotas (Com controle de página)
-        pdf.ln(5)
-        for e_idx, ender in enumerate(alvo['enderecos']):
+        # GPS Slim (Máximo 2 rotas por página)
+        pdf.ln(2)
+        for e_idx, ender in enumerate(alvo['enderecos'][:2]): # Limita a 2 para garantir caber na página
             if ender.strip():
-                # Cada bloco GPS tem aprox 25mm. O rodapé técnico tem 75mm. 
-                # Se o Y atual + bloco GPS + rodapé > altura da folha (297mm), pula página.
-                if pdf.get_y() + 25 + 75 > 290: 
-                    pdf.draw_footer_elements() # Desenha rodapé antes de pular
-                    pdf.add_page()
-                
-                pdf.set_fill_color(248, 250, 255); pdf.rect(10, pdf.get_y(), 190, 25, 'F')
+                pdf.set_fill_color(248, 250, 255); pdf.rect(10, pdf.get_y(), 190, 22, 'F')
                 qr_p = gerar_qr(end_origem, ender)
-                pdf.image(qr_p, x=12, y=pdf.get_y() + 2, w=20)
-                pdf.set_xy(35, pdf.get_y() + 4); pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(30, 50, 120)
-                pdf.cell(0, 5, f'ROTA GPS #{e_idx+1} - {ender.upper()}', 0, 1)
+                pdf.image(qr_p, x=12, y=pdf.get_y() + 1, w=18, h=18)
+                pdf.set_xy(35, pdf.get_y() + 3); pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(30, 50, 120)
+                pdf.cell(0, 4, f'ROTA GPS #{e_idx+1} - {ender.upper()[:40]}', 0, 1)
                 pdf.set_font('Helvetica', '', 7); pdf.set_text_color(100, 100, 100)
                 pdf.set_x(35); pdf.multi_cell(0, 4, f"ORIGEM: {end_origem}\nDESTINO: {ender}")
-                pdf.ln(2); os.remove(qr_p)
+                pdf.ln(1); os.remove(qr_p)
 
         pdf.draw_footer_elements()
 
-    output_pdf = "Dossie_Tactical_SIG.pdf"
+    # Gerar e Download
+    output_pdf = "Dossie_SIG_Jaboticabal.pdf"
     pdf.output(output_pdf)
     with open(output_pdf, "rb") as f:
         st.download_button("📩 BAIXAR DOSSIÊ TÁTICO FINAL", f, file_name="Dossie_SIG_Jaboticabal.pdf")
