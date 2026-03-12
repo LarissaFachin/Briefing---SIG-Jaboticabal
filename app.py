@@ -37,7 +37,8 @@ class TacticalPDF(FPDF):
         self.set_fill_color(26, 51, 126) 
         self.rect(x, y + 1.5, 3, 3, 'F')
 
-    def footer(self):
+    def draw_footer_elements(self):
+        # Relatório de Ocorrência e Grids técnicos
         self.set_y(-75)
         self.set_font('Helvetica', 'B', 9)
         self.set_text_color(0, 0, 0)
@@ -46,7 +47,7 @@ class TacticalPDF(FPDF):
         
         curr_y = self.get_y() + 5
         for i in range(1, 5):
-            x_pos = 15 + ((i-1)*20)
+            x_pos = 15 + ((i-1)*18)
             self.set_font('Helvetica', 'B', 6); self.set_text_color(100, 100, 100)
             self.text(x_pos, curr_y - 2, f"DISP. {i}")
             for r in range(3):
@@ -71,7 +72,7 @@ def gerar_qr(orig, dest):
     qr.save(path)
     return path
 
-# --- INTERFACE STREAMLIT ---
+# --- INTERFACE ---
 st.title("🛡️ TACTICAL OPS: SIG JABOTICABAL")
 
 with st.container(border=True):
@@ -95,23 +96,23 @@ for idx, alvo in enumerate(st.session_state.alvos):
     with st.expander(f"🎯 ALVO #{idx+1}", expanded=True):
         c1, c2, c3 = st.columns([2, 1, 1])
         alvo['nome'] = c1.text_input("Nome Completo", key=f"n_{idx}")
-        alvo['vulgo'] = c2.text_input("Vulgo / Apelido", key=f"v_{idx}")
+        alvo['vulgo'] = c2.text_input("Vulgo", key=f"v_{idx}")
         alvo['mandado'] = c3.selectbox("Mandado", ["BUSCA E APREENSÃO", "PRISÃO PREVENTIVA", "TEMPORÁRIA"], key=f"m_{idx}")
         
         st.write("🚔 **Logística**")
         alv_c1, alv_c2 = st.columns(2)
         alvo['viatura'] = alv_c1.text_input("Viatura / Prefixo", key=f"via_{idx}")
-        alvo['agentes'] = alv_c2.text_area("Equipe Escalada", key=f"a_{idx}", height=68)
+        alvo['agentes'] = alv_c2.text_input("Agentes (separe por vírgula)", key=f"a_{idx}")
 
         f1, f2 = st.columns(2)
-        alvo['foto_alvo'] = f1.file_uploader("📸 Retrato do Alvo", key=f"fa_{idx}")
-        alvo['foto_casa'] = f2.file_uploader("🏠 Fachada da Residência", key=f"fc_{idx}")
+        alvo['foto_alvo'] = f1.file_uploader("Foto do Alvo", key=f"fa_{idx}")
+        alvo['foto_casa'] = f2.file_uploader("Foto da Fachada", key=f"fc_{idx}")
 
         st.write("📍 **Localidades de Cumprimento**")
         for e_idx, end in enumerate(alvo['enderecos']):
             alvo['enderecos'][e_idx] = st.text_input(f"Endereço {e_idx+1}", value=end, key=f"e_{idx}_{e_idx}")
         
-        if st.button("➕ Adicionar Outro Endereço", key=f"be_{idx}"):
+        if st.button("➕ Adicionar Endereço", key=f"be_{idx}"):
             alvo['enderecos'].append('')
             st.rerun()
 
@@ -151,7 +152,7 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
         pdf.set_fill_color(26, 51, 126); pdf.set_text_color(255, 255, 255); pdf.set_font('Helvetica', 'B', 11)
         pdf.cell(0, 10, alvo['mandado'].upper(), 0, 1, 'C', True)
 
-        # --- DESTAQUE DO ALVO (CONFORME PEDIDO) ---
+        # DESTAQUE DO ALVO
         pdf.ln(2); pdf.set_text_color(0, 0, 0); pdf.set_font('Helvetica', 'B', 16)
         pdf.cell(0, 8, f"ALVO: {alvo['nome'].upper()}", 0, 1)
         pdf.set_font('Helvetica', 'B', 11); pdf.set_text_color(60, 60, 60)
@@ -182,30 +183,39 @@ if st.session_state.alvos and st.button("🛰️ GERAR DOSSIÊ TÁTICO FINAL", k
         pdf.set_x(10); pdf.cell(95, 4, 'LOCALIDADES CADASTRADAS', 0, 0)
         pdf.cell(95, 4, 'VIATURA / EFETIVO OPERACIONAL', 0, 1)
         
+        # Formatação de Agentes em linha
         pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(0, 0, 0); y_desc = pdf.get_y()
-        ends_text = "\n".join([f"- {e}" for e in alvo['enderecos'] if e.strip()])
-        pdf.multi_cell(92, 4, ends_text, 0, 'L')
+        # Pega o primeiro endereço como principal para o bloco superior
+        end_principal = alvo['enderecos'][0] if alvo['enderecos'] else "SEM ENDEREÇO"
+        pdf.multi_cell(92, 4, f"LOCAL: {end_principal}", 0, 'L')
+        
         pdf.set_xy(107, y_desc)
-        pdf.multi_cell(93, 4, f"VTR: {alvo['viatura'].upper()}\nAGENTES: {alvo['agentes']}", 0, 'L')
+        # Limpa os agentes para garantir que fiquem em uma linha separada por |
+        agentes_limpos = " | ".join([a.strip() for a in alvo['agentes'].split(',') if a.strip()])
+        pdf.multi_cell(93, 4, f"VTR: {alvo['viatura'].upper()}\nEFETIVO: {agentes_limpos}", 0, 'L')
 
-        # GPS Rotas (Um QR Code para cada endereço)
+        # GPS Rotas (Com controle de página)
         pdf.ln(5)
         for e_idx, ender in enumerate(alvo['enderecos']):
             if ender.strip():
-                if pdf.get_y() > 190: pdf.add_page() # Evita quebrar no final da folha
+                # Cada bloco GPS tem aprox 25mm. O rodapé técnico tem 75mm. 
+                # Se o Y atual + bloco GPS + rodapé > altura da folha (297mm), pula página.
+                if pdf.get_y() + 25 + 75 > 290: 
+                    pdf.draw_footer_elements() # Desenha rodapé antes de pular
+                    pdf.add_page()
+                
                 pdf.set_fill_color(248, 250, 255); pdf.rect(10, pdf.get_y(), 190, 25, 'F')
                 qr_p = gerar_qr(end_origem, ender)
                 pdf.image(qr_p, x=12, y=pdf.get_y() + 2, w=20)
                 pdf.set_xy(35, pdf.get_y() + 4); pdf.set_font('Helvetica', 'B', 8); pdf.set_text_color(30, 50, 120)
-                pdf.cell(0, 5, f'ROTA GPS #{e_idx+1}', 0, 1)
+                pdf.cell(0, 5, f'ROTA GPS #{e_idx+1} - {ender.upper()}', 0, 1)
                 pdf.set_font('Helvetica', '', 7); pdf.set_text_color(100, 100, 100)
                 pdf.set_x(35); pdf.multi_cell(0, 4, f"ORIGEM: {end_origem}\nDESTINO: {ender}")
                 pdf.ln(2); os.remove(qr_p)
 
-        pdf.draw_footer_elements() if hasattr(pdf, 'draw_footer_elements') else None
+        pdf.draw_footer_elements()
 
-    # Gerar e Download
-    output_pdf = "Dossie_SIG_Jaboticabal.pdf"
+    output_pdf = "Dossie_Tactical_SIG.pdf"
     pdf.output(output_pdf)
     with open(output_pdf, "rb") as f:
-        st.download_button("📩 BAIXAR DOSSIÊ TÁTICO FINAL", f, file_name=output_pdf)
+        st.download_button("📩 BAIXAR DOSSIÊ TÁTICO FINAL", f, file_name="Dossie_SIG_Jaboticabal.pdf")
